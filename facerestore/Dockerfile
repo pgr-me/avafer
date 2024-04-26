@@ -8,4 +8,4 @@ RUN git lfs install
 RUN git clone https://huggingface.co/spaces/nightfury/Colorizer_Models 
 RUN conda install -y conda-forge::conda-build
 RUN conda-develop /workspace/Colorizer_Models/
-COPY facerestore.py /workspace/
+COPY facerestore/facerestore.py /workspace/

@@ -10,6 +10,7 @@ from PIL import Image
 from diffusers import LDMSuperResolutionPipeline
 from diffusers.utils import load_image, make_image_grid
 import torch
+from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 # Local imports
 import colorizers as c
@@ -17,9 +18,10 @@ from colorizers.util import postprocess_tens, preprocess_img
 
 
 # IO defaults
-SRC_DIR = Path("/workspace/data/raw")
-DST_DIR = Path("/workspace/data/interim/facerestore")
+ROOT_DIR = Path("/data")
+BENCHMARK = "test_dataset"
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
+SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")  # test_dataset is just a sampling of fer2013
 # Colorizer defaults
 COLORIZER_MODELS = ("eccv16", "siggraph17")
 COLORIZER_MODEL = "eccv16"
@@ -37,10 +39,11 @@ def argparser():
         description="Restore images of grayscale faces using colorization and super resolution."
     )
     # IO arguments
-    i_help = "Path to input directory of grayscale, low-resolution images."
-    o_help = "Path to output directory of in-color, higher-resolution images."
-    parser.add_argument("-i", "--src_dir", default=SRC_DIR, type=Path, help=i_help)
-    parser.add_argument("-o", "--dst_dir", default=DST_DIR, type=Path, help=o_help)
+    # TODO: Add specifics on root directory's construction
+    io_help = "Path to root data directory; refer to README for specifics on that directory's construction."
+    bm_help = "Name of benchmark dataset to process."
+    parser.add_argument("-io", "--root_dir", default=ROOT_DIR, type=Path, help=io_help)
+    parser.add_argument("-bm", "--benchmark", default=BENCHMARK, type=str, help=bm_help)
     # Colorizer arguments
     cm_help = "Specify `eccv16` or `siggraph17` as your colorizer model."
     parser.add_argument("-cm", "--colorizer_model", choices=COLORIZER_MODELS, default=COLORIZER_MODEL, type=str, help=cm_help)
@@ -83,8 +86,18 @@ def sr(
 
 if __name__ == "__main__":
     args = argparser()
-    srcs = [x for x in args.src_dir.iterdir() if x.suffix in SUFFIXES]
-    args.dst_dir.mkdir(exist_ok=True, parents=True)
+    for k, v in vars(args).items():
+        print(f"{k}:\t{v}")
+    if args.benchmark in SUPPORTED_BENCHMARKS:
+        benchmark_dir = args.root_dir / args.benchmark
+        src_dir = benchmark_dir / "raw" / "test"  # We only use test data for experimentation
+        im_folder = ImageFolder(src_dir)
+        srcs = [Path(x[0]) for x in im_folder.imgs]
+        dst_dir = benchmark_dir / "facerestore"
+        dst_dir.mkdir(exist_ok=True, parents=True)
+    else:
+        raise NotImplementedError(f"Benchmark {args.benchmark} is not supported.")
+    srcs = [x for x in srcs if x.suffix in SUFFIXES]
     if len(srcs) == 0:
         print("There are no images to process.")
         sys.exit(1)
@@ -105,9 +118,11 @@ if __name__ == "__main__":
     
     print(f"Transform images.")
     for src in tqdm(srcs):
+        emo_subdir = dst_dir / src.parents[0].name
+        emo_subdir.mkdir(exist_ok=True, parents=True)
+        dst = emo_subdir / f"{src.stem}.png"
         src_im = Image.open(src).convert("RGB")
         rgb_im = colorize(src_im, device, colorizer_model)
         sr_im = sr(rgb_im, sr_pipeline, in_resize, out_resize, args.n_inf_steps, args.eta)
-        dst = args.dst_dir / f"{src.stem}.png"
         sr_im.save(dst)
 
