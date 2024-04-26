@@ -14,5 +14,4 @@ The codebase performs the following tasks in the order listed:
 * Facial landmark estimation: Estimate five facial keypoints and save output.
 * 3D facial reconstruction: Generate a 3D representation of the input image.
 * Facial expression transfer to arbitrary avatar: TODO
-* Facial expression recognition: TODO
-
+* Facial expression recognition: Predict facial expression of input images.
