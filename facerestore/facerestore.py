@@ -18,6 +18,7 @@ from colorizers.util import postprocess_tens, preprocess_img
 
 
 # IO defaults
+NAME = "HF"  # HuggingFace colorization and super resolution used in this script
 ROOT_DIR = Path("/data")
 BENCHMARK = "test_dataset"
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
@@ -40,24 +41,30 @@ def argparser():
     )
     # IO arguments
     # TODO: Add specifics on root directory's construction
-    io_help = "Path to root data directory; refer to README for specifics on that directory's construction."
     bm_help = "Name of benchmark dataset to process."
-    parser.add_argument("-io", "--root_dir", default=ROOT_DIR, type=Path, help=io_help)
+    io_help = "Path to root data directory; refer to README for specifics on that directory's construction."
+    na_help = "Name of destination directory (e.g., HF for HuggingFace routine in this script)."
     parser.add_argument("-bm", "--benchmark", default=BENCHMARK, type=str, help=bm_help)
+    parser.add_argument("-io", "--root_dir", default=ROOT_DIR, type=Path, help=io_help)
+    parser.add_argument("-na", "--name", default=NAME, type=str, help=na_help)
     # Colorizer arguments
     cm_help = "Specify `eccv16` or `siggraph17` as your colorizer model."
+    sc_help = "Specify to skip colorizer. Three-band grayscale will be saved."
     parser.add_argument("-cm", "--colorizer_model", choices=COLORIZER_MODELS, default=COLORIZER_MODEL, type=str, help=cm_help)
+    parser.add_argument("-sc", "--skip_colorizer", action="store_true", help=sc_help)
     # SR arguments
     et_help = "Random amount of scaled noise to mix into each timestep."
     id_help = "HuggingFace diffusion model ID."
     is_help = "Resize for input to super resolution pipeline."
     ns_help = "Number of inference steps to run using super resolution diffusion model."
     os_help = "Resize after super resolution."
+    ss_help = "Specify to skip super resolution."
     parser.add_argument("-et", "--eta", default=ETA, type=float, help=et_help)
     parser.add_argument("-id", "--sr_model_id", default=SR_MODEL_ID, type=str, help=id_help)
     parser.add_argument("-is", "--in_size", default=IN_SIZE, type=int, help=is_help)
     parser.add_argument("-ns", "--n_inf_steps", default=N_INF_STEPS, type=int, help=ns_help)
     parser.add_argument("-os", "--out_size", default=OUT_SIZE, type=int, help=os_help)
+    parser.add_argument("-ssr", "--skip_sr", action="store_true", help=ss_help)
     return parser.parse_args()
 
 
@@ -93,7 +100,7 @@ if __name__ == "__main__":
         src_dir = benchmark_dir / "raw" / "test"  # We only use test data for experimentation
         im_folder = ImageFolder(src_dir)
         srcs = [Path(x[0]) for x in im_folder.imgs]
-        dst_dir = benchmark_dir / "facerestore"
+        dst_dir = benchmark_dir / "facerestore" / args.name
         dst_dir.mkdir(exist_ok=True, parents=True)
     else:
         raise NotImplementedError(f"Benchmark {args.benchmark} is not supported.")
@@ -122,7 +129,13 @@ if __name__ == "__main__":
         emo_subdir.mkdir(exist_ok=True, parents=True)
         dst = emo_subdir / f"{src.stem}.png"
         src_im = Image.open(src).convert("RGB")
-        rgb_im = colorize(src_im, device, colorizer_model)
-        sr_im = sr(rgb_im, sr_pipeline, in_resize, out_resize, args.n_inf_steps, args.eta)
+        if args.skip_colorization:
+            rgb_im = src_im.resize(in_resize)
+        else:
+            rgb_im = colorize(src_im, device, colorizer_model)
+        if args.skip_sr:
+            sr_im = rgb_im.resize(out_resize)
+        else:
+            sr_im = sr(rgb_im, sr_pipeline, in_resize, out_resize, args.n_inf_steps, args.eta)
         sr_im.save(dst)
 
