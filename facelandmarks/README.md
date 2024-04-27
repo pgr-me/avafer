@@ -21,10 +21,10 @@ $ docker exec -ti facelandmarks bash
 
 ## Execute the face restoration script and display help menu.
 ```shell
-$ python get_facelandmarks.py -h
+$ python facelandmarks.py -h
 ```
 
 ## Example command to process test (i.e., example) benchmark:
 ```shell
-$ python get_facelandmarks.py --root_dir /data --benchmark test_dataset
+$ python facelandmarks.py --root_dir /data --benchmark test_dataset
 ```
