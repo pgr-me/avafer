@@ -63,7 +63,7 @@ if __name__ == "__main__":
             lm = lm[0].reshape((2, 5)).T
             emo_subdir = dst_dir / src.parents[0].name
             emo_subdir.mkdir(exist_ok=True, parents=True)
-            dst = emo_subdir / f"{src.stem}.png"
+            dst = emo_subdir / f"{src.stem}.txt"
             np.savetxt(dst, lm, fmt="%.2f")
         except Exception as e:
             logger.error(f"{src} failed.")
