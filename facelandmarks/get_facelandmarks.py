@@ -57,12 +57,14 @@ if __name__ == "__main__":
         image = Image.open(src)
         with torch.no_grad():
             bb, lm = detect_faces(image)
+        # TODO: Track these failures quantitatively
+        # TODO: Look into how these errors can be avoided entirely
         try:
             lm = lm[0].reshape((2, 5)).T
-        except:
-            import ipdb; ipdb.set_trace()
-        emo_subdir = dst_dir / src.parents[0].name
-        emo_subdir.mkdir(exist_ok=True, parents=True)
-        dst = emo_subdir / f"{src.stem}.png"
-        np.savetxt(dst, lm, fmt="%.2f")
+            emo_subdir = dst_dir / src.parents[0].name
+            emo_subdir.mkdir(exist_ok=True, parents=True)
+            dst = emo_subdir / f"{src.stem}.png"
+            np.savetxt(dst, lm, fmt="%.2f")
+        except Exception as e:
+            logger.error(f"{src} failed.")
 
