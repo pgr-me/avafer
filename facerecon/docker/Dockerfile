@@ -64,4 +64,6 @@ RUN cd Deep3DFaceRecon_pytorch/  # /workspace/Deep3DFaceRecon_pytorch
 # Clone insightface repo and copy model over to Deep3DFaceRecon_pytorch models dir
 RUN git clone https://github.com/deepinsight/insightface.git
 RUN cp -r /workspace/insightface/recognition/arcface_torch /workspace/Deep3DFaceRecon_pytorch/models/
-
+RUN cp /data/pretrained/facerecon/BFM/* /workspace/Deep3DFaceRecon_pytorch/BFM/
+RUN cp -r /data/pretrained/facerecon/checkpoints/ /workspace/Deep3DFaceRecon_pytorch/
+WORKDIR /workspace/Deep3DFaceRecon_pytorch/
