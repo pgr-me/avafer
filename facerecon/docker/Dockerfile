@@ -45,7 +45,6 @@ ENV PYOPENGL_PLATFORM egl
 # Source Dockerfile: https://github.com/NVlabs/nvdiffrast/blob/main/docker/Dockerfile
 # Retrieved 4/26/2024
 COPY facerecon/docker/10_nvidia.json /usr/share/glvnd/egl_vendor.d/10_nvidia.json
-
 # Install nvdiffrast
 RUN pip install --upgrade pip
 RUN pip install ninja imageio imageio-ffmpeg
@@ -56,7 +55,6 @@ RUN cp nvdiffrast/setup.py /tmp/pip/
 RUN cp nvdiffrast/README.md /tmp/pip/
 RUN cd /tmp/pip && pip install .
 WORKDIR /workspace/
-
 RUN pip install kornia dominate trimesh tensorflow scikit-image
 # Clone Deep3DFaceRecon_pytorch repo and cd into it
 RUN git clone https://github.com/sicxu/Deep3DFaceRecon_pytorch.git
@@ -64,6 +62,12 @@ RUN cd Deep3DFaceRecon_pytorch/  # /workspace/Deep3DFaceRecon_pytorch
 # Clone insightface repo and copy model over to Deep3DFaceRecon_pytorch models dir
 RUN git clone https://github.com/deepinsight/insightface.git
 RUN cp -r /workspace/insightface/recognition/arcface_torch /workspace/Deep3DFaceRecon_pytorch/models/
-RUN cp /data/pretrained/facerecon/BFM/* /workspace/Deep3DFaceRecon_pytorch/BFM/
-RUN cp -r /data/pretrained/facerecon/checkpoints/ /workspace/Deep3DFaceRecon_pytorch/
+# Copy over models
+COPY data/pretrained/facerecon/BFM/01_MorphableModel.mat /workspace/Deep3DFaceRecon_pytorch/BFM/
+COPY data/pretrained/facerecon/BFM/Exp_Pca.bin /workspace/Deep3DFaceRecon_pytorch/BFM/
+COPY data/pretrained/facerecon/checkpoints/facerecon_20230425/ /workspace/Deep3DFaceRecon_pytorch/checkpoints/facerecon_20230425/
+# Copy over runner file
+COPY facerecon/facerecon.py /workspace/Deep3DFaceRecon_pytorch/
+# Install modules specific to modification of Deep3dFaceRecon_pytorch
+RUN pip install loguru
 WORKDIR /workspace/Deep3DFaceRecon_pytorch/
