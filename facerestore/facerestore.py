@@ -129,7 +129,7 @@ if __name__ == "__main__":
         emo_subdir.mkdir(exist_ok=True, parents=True)
         dst = emo_subdir / f"{src.stem}.png"
         src_im = Image.open(src).convert("RGB")
-        if args.skip_colorization:
+        if args.skip_colorizer:
             rgb_im = src_im.resize(in_resize)
         else:
             rgb_im = colorize(src_im, device, colorizer_model)
