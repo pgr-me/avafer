@@ -16,8 +16,8 @@ from src import detect_faces
 
 # IO defaults
 BENCHMARK = "test_dataset"
-NAME = "HF"  # Sub-directory to write to in facelandmarks directory
-PRED_NAME = "HF"  # Predecessor step to use
+STEP = "HF"  # Sub-directory to write to in facelandmarks directory
+PRED_STEP = "HF"  # Predecessor step to use
 ROOT_DIR = Path("/data")
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
 SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")  # test_datset is just a sampling of fer2013
@@ -29,12 +29,12 @@ def argparser():
     # TODO: Add specifics on root directory's construction
     bm_help = "Name of benchmark dataset to process."
     io_help = "Path to root data directory; refer to repository-level README for specifics."
-    na_help = "Name of destination sub-directory in data/facelandmarks/ dir."
-    pn_help = "Name of predecessor step corresponding to sub-directory in data/facerestore/ dir."
+    ps_help = "Name of predecessor step corresponding to sub-directory in data/facerestore/ dir."
+    st_help = "Name of destination sub-directory in data/facelandmarks/ dir."
     parser.add_argument("-bm", "--benchmark", type=str, default=BENCHMARK, help=bm_help)
     parser.add_argument("-io", "--root_dir", type=Path, default=ROOT_DIR, help=io_help)
-    parser.add_argument("-na", "--name", default=NAME, type=str, help=na_help)
-    parser.add_argument("-pn", "--pred_name", default=PRED_NAME, type=str, help=pn_help)
+    parser.add_argument("-ps", "--pred_step", default=PRED_STEP, type=str, help=ps_help)
+    parser.add_argument("-st", "--step", default=STEP, type=str, help=st_help)
     return parser.parse_args()
 
   
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         logger.debug(f"{k}: {v}")
     if args.benchmark in SUPPORTED_BENCHMARKS:
         benchmark_dir = args.root_dir / args.benchmark
-        src_dir = benchmark_dir / "facerestore" / args.pred_name
+        src_dir = benchmark_dir / "facerestore" / args.pred_step
         try:
             im_folder = ImageFolder(src_dir)
         except Exception as e:
@@ -55,7 +55,7 @@ if __name__ == "__main__":
             sys.exit(1)
         srcs = [Path(x[0]) for x in im_folder.imgs]
         im_folder = ImageFolder(src_dir)
-        dst_dir = benchmark_dir / "facelandmarks" / args.name
+        dst_dir = benchmark_dir / "facelandmarks" / args.step
     else:
         logger.error(f"Benchmark {args.benchmark} is not supported")
         sys.exit(1)
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         # TODO: Look into how these errors can be avoided entirely
         try:
             lm = lm[0].reshape((2, 5)).T
-            emo_subdir = dst_dir / src.parents[0].name
+            emo_subdir = dst_dir / src.parents[0].step
             emo_subdir.mkdir(exist_ok=True, parents=True)
             dst = emo_subdir / f"{src.stem}.txt"
             np.savetxt(dst, lm, fmt="%.2f")
