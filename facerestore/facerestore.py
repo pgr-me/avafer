@@ -10,6 +10,7 @@ from PIL import Image
 from diffusers import LDMSuperResolutionPipeline
 from diffusers.utils import load_image, make_image_grid
 import torch
+from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 # Local imports
 import colorizers as c
@@ -17,12 +18,14 @@ from colorizers.util import postprocess_tens, preprocess_img
 
 
 # IO defaults
-SRC_DIR = Path("/workspace/data/raw")
-DST_DIR = Path("/workspace/data/interim/facerestore")
+BENCHMARK = "test_dataset"
+STEP = "HF"  # HuggingFace colorization and super resolution used in this script
+ROOT_DIR = Path("/data")
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
+SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")  # test_dataset is just a sampling of fer2013
 # Colorizer defaults
-COLORIZER_MODELS = ("eccv16", "siggraph17")
 COLORIZER_MODEL = "eccv16"
+COLORIZER_MODELS = ("eccv16", "siggraph17")
 # SR defaults
 SR_MODEL_ID = "CompVis/ldm-super-resolution-4x-openimages"
 IN_SIZE = OUT_SIZE = 128
@@ -37,24 +40,31 @@ def argparser():
         description="Restore images of grayscale faces using colorization and super resolution."
     )
     # IO arguments
-    i_help = "Path to input directory of grayscale, low-resolution images."
-    o_help = "Path to output directory of in-color, higher-resolution images."
-    parser.add_argument("-i", "--src_dir", default=SRC_DIR, type=Path, help=i_help)
-    parser.add_argument("-o", "--dst_dir", default=DST_DIR, type=Path, help=o_help)
+    # TODO: Add specifics on root directory's construction
+    bm_help = "Name of benchmark dataset to process."
+    io_help = "Path to root data directory; refer to README for specifics on that directory's construction."
+    na_help = "Name of destination directory (e.g., HF for HuggingFace routine in this script)."
+    parser.add_argument("-bm", "--benchmark", default=BENCHMARK, type=str, help=bm_help)
+    parser.add_argument("-io", "--root_dir", default=ROOT_DIR, type=Path, help=io_help)
+    parser.add_argument("-st", "--step", default=STEP, type=str, help=na_help)
     # Colorizer arguments
     cm_help = "Specify `eccv16` or `siggraph17` as your colorizer model."
+    sc_help = "Specify to skip colorizer. Three-band grayscale will be saved."
     parser.add_argument("-cm", "--colorizer_model", choices=COLORIZER_MODELS, default=COLORIZER_MODEL, type=str, help=cm_help)
+    parser.add_argument("-sc", "--skip_colorizer", action="store_true", help=sc_help)
     # SR arguments
     et_help = "Random amount of scaled noise to mix into each timestep."
     id_help = "HuggingFace diffusion model ID."
     is_help = "Resize for input to super resolution pipeline."
     ns_help = "Number of inference steps to run using super resolution diffusion model."
     os_help = "Resize after super resolution."
+    ss_help = "Specify to skip super resolution."
     parser.add_argument("-et", "--eta", default=ETA, type=float, help=et_help)
     parser.add_argument("-id", "--sr_model_id", default=SR_MODEL_ID, type=str, help=id_help)
     parser.add_argument("-is", "--in_size", default=IN_SIZE, type=int, help=is_help)
     parser.add_argument("-ns", "--n_inf_steps", default=N_INF_STEPS, type=int, help=ns_help)
     parser.add_argument("-os", "--out_size", default=OUT_SIZE, type=int, help=os_help)
+    parser.add_argument("-ssr", "--skip_sr", action="store_true", help=ss_help)
     return parser.parse_args()
 
 
@@ -83,12 +93,22 @@ def sr(
 
 if __name__ == "__main__":
     args = argparser()
-    srcs = [x for x in args.src_dir.iterdir() if x.suffix in SUFFIXES]
-    args.dst_dir.mkdir(exist_ok=True, parents=True)
+    for k, v in vars(args).items():
+        print(f"{k}:\t{v}")
+    if args.benchmark in SUPPORTED_BENCHMARKS:
+        benchmark_dir = args.root_dir / args.benchmark
+        src_dir = benchmark_dir / "raw" / "test"  # We only use test data for experimentation
+        im_folder = ImageFolder(src_dir)
+        srcs = [Path(x[0]) for x in im_folder.imgs]
+        dst_dir = benchmark_dir / "facerestore" / args.step
+    else:
+        raise NotImplementedError(f"Benchmark {args.benchmark} is not supported.")
+    srcs = [x for x in srcs if x.suffix in SUFFIXES]
     if len(srcs) == 0:
         print("There are no images to process.")
         sys.exit(1)
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    dst_dir.mkdir(exist_ok=True, parents=True)
 
     # Load colorization model and send to device
     if args.colorizer_model == "eccv16":
@@ -105,9 +125,17 @@ if __name__ == "__main__":
     
     print(f"Transform images.")
     for src in tqdm(srcs):
+        emo_subdir = dst_dir / src.parents[0].step
+        emo_subdir.mkdir(exist_ok=True, parents=True)
+        dst = emo_subdir / f"{src.stem}.png"
         src_im = Image.open(src).convert("RGB")
-        rgb_im = colorize(src_im, device, colorizer_model)
-        sr_im = sr(rgb_im, sr_pipeline, in_resize, out_resize, args.n_inf_steps, args.eta)
-        dst = args.dst_dir / f"{src.stem}.png"
+        if args.skip_colorizer:
+            rgb_im = src_im.resize(in_resize)
+        else:
+            rgb_im = colorize(src_im, device, colorizer_model)
+        if args.skip_sr:
+            sr_im = rgb_im.resize(out_resize)
+        else:
+            sr_im = sr(rgb_im, sr_pipeline, in_resize, out_resize, args.n_inf_steps, args.eta)
         sr_im.save(dst)
 
