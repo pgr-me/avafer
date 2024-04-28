@@ -19,7 +19,7 @@ from colorizers.util import postprocess_tens, preprocess_img
 
 # IO defaults
 BENCHMARK = "test_dataset"
-NAME = "HF"  # HuggingFace colorization and super resolution used in this script
+STEP = "HF"  # HuggingFace colorization and super resolution used in this script
 ROOT_DIR = Path("/data")
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
 SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")  # test_dataset is just a sampling of fer2013
@@ -46,7 +46,7 @@ def argparser():
     na_help = "Name of destination directory (e.g., HF for HuggingFace routine in this script)."
     parser.add_argument("-bm", "--benchmark", default=BENCHMARK, type=str, help=bm_help)
     parser.add_argument("-io", "--root_dir", default=ROOT_DIR, type=Path, help=io_help)
-    parser.add_argument("-na", "--name", default=NAME, type=str, help=na_help)
+    parser.add_argument("-st", "--step", default=STEP, type=str, help=na_help)
     # Colorizer arguments
     cm_help = "Specify `eccv16` or `siggraph17` as your colorizer model."
     sc_help = "Specify to skip colorizer. Three-band grayscale will be saved."
@@ -100,7 +100,7 @@ if __name__ == "__main__":
         src_dir = benchmark_dir / "raw" / "test"  # We only use test data for experimentation
         im_folder = ImageFolder(src_dir)
         srcs = [Path(x[0]) for x in im_folder.imgs]
-        dst_dir = benchmark_dir / "facerestore" / args.name
+        dst_dir = benchmark_dir / "facerestore" / args.step
     else:
         raise NotImplementedError(f"Benchmark {args.benchmark} is not supported.")
     srcs = [x for x in srcs if x.suffix in SUFFIXES]
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     
     print(f"Transform images.")
     for src in tqdm(srcs):
-        emo_subdir = dst_dir / src.parents[0].name
+        emo_subdir = dst_dir / src.parents[0].step
         emo_subdir.mkdir(exist_ok=True, parents=True)
         dst = emo_subdir / f"{src.stem}.png"
         src_im = Image.open(src).convert("RGB")
