@@ -18,14 +18,14 @@ from colorizers.util import postprocess_tens, preprocess_img
 
 
 # IO defaults
+BENCHMARK = "test_dataset"
 NAME = "HF"  # HuggingFace colorization and super resolution used in this script
 ROOT_DIR = Path("/data")
-BENCHMARK = "test_dataset"
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
 SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")  # test_dataset is just a sampling of fer2013
 # Colorizer defaults
-COLORIZER_MODELS = ("eccv16", "siggraph17")
 COLORIZER_MODEL = "eccv16"
+COLORIZER_MODELS = ("eccv16", "siggraph17")
 # SR defaults
 SR_MODEL_ID = "CompVis/ldm-super-resolution-4x-openimages"
 IN_SIZE = OUT_SIZE = 128
@@ -101,7 +101,6 @@ if __name__ == "__main__":
         im_folder = ImageFolder(src_dir)
         srcs = [Path(x[0]) for x in im_folder.imgs]
         dst_dir = benchmark_dir / "facerestore" / args.name
-        dst_dir.mkdir(exist_ok=True, parents=True)
     else:
         raise NotImplementedError(f"Benchmark {args.benchmark} is not supported.")
     srcs = [x for x in srcs if x.suffix in SUFFIXES]
@@ -109,6 +108,7 @@ if __name__ == "__main__":
         print("There are no images to process.")
         sys.exit(1)
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    dst_dir.mkdir(exist_ok=True, parents=True)
 
     # Load colorization model and send to device
     if args.colorizer_model == "eccv16":
