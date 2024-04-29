@@ -72,7 +72,7 @@ if __name__ == "__main__":
         # TODO: Look into how these errors can be avoided entirely
         try:
             lm = lm[0].reshape((2, 5)).T
-            emo_subdir = dst_dir / src.parents[0].step
+            emo_subdir = dst_dir / src.parents[0].name
             emo_subdir.mkdir(exist_ok=True, parents=True)
             dst = emo_subdir / f"{src.stem}.txt"
             np.savetxt(dst, lm, fmt="%.2f")
