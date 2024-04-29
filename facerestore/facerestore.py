@@ -125,7 +125,7 @@ if __name__ == "__main__":
     
     print(f"Transform images.")
     for src in tqdm(srcs):
-        emo_subdir = dst_dir / src.parents[0].step
+        emo_subdir = dst_dir / src.parents[0].name
         emo_subdir.mkdir(exist_ok=True, parents=True)
         dst = emo_subdir / f"{src.stem}.png"
         src_im = Image.open(src).convert("RGB")
