@@ -1,8 +1,9 @@
-#/usr/bin/env python3
+# /usr/bin/env python3
 # Standard library imports
 import argparse
 from pathlib import Path
 import sys
+
 # Third party imports
 from loguru import logger
 import numpy as np
@@ -10,6 +11,7 @@ from PIL import Image
 import torch
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
+
 # Local imports
 from src import detect_faces
 
@@ -20,7 +22,10 @@ STEP = "HF"  # Sub-directory to write to in facelandmarks directory
 PRED_STEP = "HF"  # Predecessor step to use
 ROOT_DIR = Path("/data")
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
-SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")  # test_datset is just a sampling of fer2013
+SUPPORTED_BENCHMARKS = (
+    "fer2013",
+    "test_dataset",
+)  # test_datset is just a sampling of fer2013
 
 
 def argparser():
@@ -28,7 +33,9 @@ def argparser():
     # IO arguments
     # TODO: Add specifics on root directory's construction
     bm_help = "Name of benchmark dataset to process."
-    io_help = "Path to root data directory; refer to repository-level README for specifics."
+    io_help = (
+        "Path to root data directory; refer to repository-level README for specifics."
+    )
     ps_help = "Name of predecessor step corresponding to sub-directory in data/facerestore/ dir."
     st_help = "Name of destination sub-directory in data/facelandmarks/ dir."
     parser.add_argument("-bm", "--benchmark", type=str, default=BENCHMARK, help=bm_help)
@@ -37,7 +44,7 @@ def argparser():
     parser.add_argument("-st", "--step", default=STEP, type=str, help=st_help)
     return parser.parse_args()
 
-  
+
 if __name__ == "__main__":
     args = argparser()
     logger.add("facelandmarks.log", rotation="1 week")
@@ -50,7 +57,9 @@ if __name__ == "__main__":
         try:
             im_folder = ImageFolder(src_dir)
         except Exception as e:
-            logger.error(f"{src_dir} does not exist. Run the facerestore step to generate.")
+            logger.error(
+                f"{src_dir} does not exist. Run the facerestore step to generate."
+            )
             logger.error(e)
             sys.exit(1)
         srcs = [Path(x[0]) for x in im_folder.imgs]
@@ -78,4 +87,3 @@ if __name__ == "__main__":
             np.savetxt(dst, lm, fmt="%.2f")
         except Exception as e:
             logger.error(f"{src} failed.")
-

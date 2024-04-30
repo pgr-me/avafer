@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import sys
 from typing import Tuple
+
 # Third party imports
 import numpy as np
 from PIL import Image
@@ -12,6 +13,7 @@ from diffusers.utils import load_image, make_image_grid
 import torch
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
+
 # Local imports
 import colorizers as c
 from colorizers.util import postprocess_tens, preprocess_img
@@ -22,7 +24,10 @@ BENCHMARK = "test_dataset"
 STEP = "HF"  # HuggingFace colorization and super resolution used in this script
 ROOT_DIR = Path("/data")
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
-SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")  # test_dataset is just a sampling of fer2013
+SUPPORTED_BENCHMARKS = (
+    "fer2013",
+    "test_dataset",
+)  # test_dataset is just a sampling of fer2013
 # Colorizer defaults
 COLORIZER_MODEL = "eccv16"
 COLORIZER_MODELS = ("eccv16", "siggraph17")
@@ -37,7 +42,7 @@ def argparser():
     prog = "FaceRestoration"
     parser = argparse.ArgumentParser(
         prog="FaceRestoration",
-        description="Restore images of grayscale faces using colorization and super resolution."
+        description="Restore images of grayscale faces using colorization and super resolution.",
     )
     # IO arguments
     # TODO: Add specifics on root directory's construction
@@ -50,7 +55,14 @@ def argparser():
     # Colorizer arguments
     cm_help = "Specify `eccv16` or `siggraph17` as your colorizer model."
     sc_help = "Specify to skip colorizer. Three-band grayscale will be saved."
-    parser.add_argument("-cm", "--colorizer_model", choices=COLORIZER_MODELS, default=COLORIZER_MODEL, type=str, help=cm_help)
+    parser.add_argument(
+        "-cm",
+        "--colorizer_model",
+        choices=COLORIZER_MODELS,
+        default=COLORIZER_MODEL,
+        type=str,
+        help=cm_help,
+    )
     parser.add_argument("-sc", "--skip_colorizer", action="store_true", help=sc_help)
     # SR arguments
     et_help = "Random amount of scaled noise to mix into each timestep."
@@ -60,9 +72,13 @@ def argparser():
     os_help = "Resize after super resolution."
     ss_help = "Specify to skip super resolution."
     parser.add_argument("-et", "--eta", default=ETA, type=float, help=et_help)
-    parser.add_argument("-id", "--sr_model_id", default=SR_MODEL_ID, type=str, help=id_help)
+    parser.add_argument(
+        "-id", "--sr_model_id", default=SR_MODEL_ID, type=str, help=id_help
+    )
     parser.add_argument("-is", "--in_size", default=IN_SIZE, type=int, help=is_help)
-    parser.add_argument("-ns", "--n_inf_steps", default=N_INF_STEPS, type=int, help=ns_help)
+    parser.add_argument(
+        "-ns", "--n_inf_steps", default=N_INF_STEPS, type=int, help=ns_help
+    )
     parser.add_argument("-os", "--out_size", default=OUT_SIZE, type=int, help=os_help)
     parser.add_argument("-ssr", "--skip_sr", action="store_true", help=ss_help)
     return parser.parse_args()
@@ -70,8 +86,8 @@ def argparser():
 
 def colorize(img: Image, device: str, model) -> Image:
     arr = np.asarray(img)
-    if(arr.ndim == 2):
-        arr = np.tile(arr[:,:,None], 3)
+    if arr.ndim == 2:
+        arr = np.tile(arr[:, :, None], 3)
     tens_l_orig, tens_l_rs = preprocess_img(arr)
     tens_l_orig, tens_l_rs = tens_l_orig.to(device), tens_l_rs.to(device)
     output_arr = postprocess_tens(tens_l_orig, model(tens_l_rs))
@@ -79,16 +95,20 @@ def colorize(img: Image, device: str, model) -> Image:
 
 
 def sr(
-        img: Image,
-        pipeline: LDMSuperResolutionPipeline,
-        in_resize_: Tuple=(128, 128),
-        out_resize_: Tuple=(128, 128),
-        n_inf_steps: int=100,
-        eta: float=1
-    ) -> Image:
+    img: Image,
+    pipeline: LDMSuperResolutionPipeline,
+    in_resize_: Tuple = (128, 128),
+    out_resize_: Tuple = (128, 128),
+    n_inf_steps: int = 100,
+    eta: float = 1,
+) -> Image:
     img = img.convert("RGB").resize(in_resize_)
     # run pipeline in inference (sample random noise and denoise)
-    return pipeline(img, num_inference_steps=n_inf_steps, eta=eta).images[0].resize(out_resize_)
+    return (
+        pipeline(img, num_inference_steps=n_inf_steps, eta=eta)
+        .images[0]
+        .resize(out_resize_)
+    )
 
 
 if __name__ == "__main__":
@@ -97,7 +117,9 @@ if __name__ == "__main__":
         print(f"{k}:\t{v}")
     if args.benchmark in SUPPORTED_BENCHMARKS:
         benchmark_dir = args.root_dir / args.benchmark
-        src_dir = benchmark_dir / "raw" / "test"  # We only use test data for experimentation
+        src_dir = (
+            benchmark_dir / "raw" / "test"
+        )  # We only use test data for experimentation
         im_folder = ImageFolder(src_dir)
         srcs = [Path(x[0]) for x in im_folder.imgs]
         dst_dir = benchmark_dir / "facerestore" / args.step
@@ -117,12 +139,12 @@ if __name__ == "__main__":
         colorizer_model = c.siggraph17(pretrained=True).eval()
     colorizer_model = colorizer_model.to(device)
 
-    # Load super resolution pipeline and send to device 
+    # Load super resolution pipeline and send to device
     in_resize = (args.in_size, args.in_size)
     out_resize = (args.out_size, args.out_size)
     sr_pipeline = LDMSuperResolutionPipeline.from_pretrained(args.sr_model_id)
     sr_pipeline = sr_pipeline.to(device)
-    
+
     print(f"Transform images.")
     for src in tqdm(srcs):
         emo_subdir = dst_dir / src.parents[0].name
@@ -136,6 +158,7 @@ if __name__ == "__main__":
         if args.skip_sr:
             sr_im = rgb_im.resize(out_resize)
         else:
-            sr_im = sr(rgb_im, sr_pipeline, in_resize, out_resize, args.n_inf_steps, args.eta)
+            sr_im = sr(
+                rgb_im, sr_pipeline, in_resize, out_resize, args.n_inf_steps, args.eta
+            )
         sr_im.save(dst)
-
