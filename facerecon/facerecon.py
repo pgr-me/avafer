@@ -27,7 +27,8 @@ from util.util import tensor2im
 from util.visualizer import MyVisualizer
 
 # IO defaults
-BENCHMARK = "test_dataset"
+# TODO: Fix the CLI so that arguments actually work...remove the original args class repo used and replace with argparser
+BENCHMARK = "fer2013"#"test_dataset"
 NAME = "facerecon_20230425"
 PRED_STEP = "HF"
 ROOT_DIR = Path("/data")

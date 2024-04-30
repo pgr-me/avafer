@@ -71,12 +71,17 @@ def run(args_: argparse.Namespace, logger_) -> pd.DataFrame:
         di = dict(obs_id=src.stem, y=y)
         # Predict / infer when there is a reconstructed image
         if k_tuple in im_srcs_di:
-            image = cv2.imread(str(src))
-            results_ = m.detect_emotion_for_single_frame(image)
-            di.update({k:v for k, v in results_[0].items() if k != "proba_list"})
-            for emo in results_[0]["proba_list"]:
-                di.update(emo)
-            di.update({"processed_ok": True})
+            try:
+                image = cv2.imread(str(src))
+                results_ = m.detect_emotion_for_single_frame(image)
+                di.update({k:v for k, v in results_[0].items() if k != "proba_list"})
+                for emo in results_[0]["proba_list"]:
+                    di.update(emo)
+                di.update({"processed_ok": True})
+            except Exception as e:
+                logger.error(f"{k_tuple} failed.")
+                logger.error(e)
+                di.update(DUMMY_DI)
         # Case when raw image wasn't processed
         else:
             di.update(DUMMY_DI)
