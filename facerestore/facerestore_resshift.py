@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 # IO defaults
 BENCHMARK = "test_dataset"
-PRED_STEP = None  # Predecessor step to use
+PRED_STEP = None  # Predecessor step to use; if None then this is first step
 STEP = "facerestore_resshift"  # HuggingFace colorization and super resolution used in this script
 ROOT_DIR = Path("/data")
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
@@ -54,8 +54,9 @@ def argparser():
 
 if __name__ == "__main__":
     args = argparser()
+    logger.info(f"Arguments")
     for k, v in vars(args).items():
-        logger.debug(f"{k:>20s}:{v}")
+        logger.debug(f"{k}: {v}")
     if args.benchmark in SUPPORTED_BENCHMARKS:
         benchmark_dir = args.root_dir / args.benchmark
         if args.pred_step is None:
@@ -79,4 +80,4 @@ if __name__ == "__main__":
     else:
         raise NotImplementedError(f"Benchmark {args.benchmark} is not supported.")
 
-    loguru.info(f"Finish ResShift super resolution.")
+    logger.info(f"Finish ResShift super resolution.")
