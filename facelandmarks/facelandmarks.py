@@ -18,7 +18,7 @@ from src import detect_faces
 
 # IO defaults
 BENCHMARK = "test_dataset"
-STEP = "facelandmarks"  # Sub-directory to write to in facelandmarks directory
+STEP = "facelandmarks_mtcnn"  # Sub-directory of benchmark directory
 PRED_STEP = "facerestore_deoldify"  # Predecessor step to use
 ROOT_DIR = Path("/data")
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
