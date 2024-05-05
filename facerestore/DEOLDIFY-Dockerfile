@@ -1,0 +1,12 @@
+FROM pytorch/pytorch:1.11.0-cuda11.3-cudnn8-devel
+
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC
+RUN apt-get update && apt-get install -y git vim ffmpeg
+
+RUN python -m pip install --upgrade pip
+RUN git clone https://github.com/jantic/DeOldify.git DeOldify
+WORKDIR /workspace/DeOldify
+RUN conda install -y tensorboardX ffmpeg
+RUN pip install opencv-python wandb yt-dlp matplotlib pandas scipy fastprogress ffmpeg loguru
+COPY facerestore/facerestore_deoldify.py /workspace/DeOldify/
+COPY models/facerestore/deoldify/ColorizeStable_gen.pth /workspace/DeOldify/models/
