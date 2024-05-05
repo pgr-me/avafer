@@ -15,9 +15,9 @@ from tqdm import tqdm
 
 # IO defaults
 BENCHMARK = "test_dataset"
-PRED_STEP = "HF"
+PRED_STEP = "facerecon_deep3dfacerecon"
 ROOT_DIR = Path("/data")
-STEP = "HF-RMN"
+STEP = "fer_rmn"
 SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")
 SUFFIXES = (
     ".png",
@@ -52,8 +52,8 @@ def argparser():
     io_help = (
         "Path to root data directory; refer to repository-level README for specifics."
     )
-    ps_help = "Name of predecessor step corresponding to sub-directory in data/facerecon/ dir."
-    st_help = "Name of destination sub-directory in data/fer/ dir."
+    ps_help = "Name of predecessor step corresponding to data/<benchmark>/<pred_step>."
+    st_help = "Name of destination data/<benchmark>/<step> dir."
     parser.add_argument("-bm", "--benchmark", type=str, default=BENCHMARK, help=bm_help)
     parser.add_argument("-io", "--root_dir", type=Path, default=ROOT_DIR, help=io_help)
     parser.add_argument("-ps", "--pred_step", default=PRED_STEP, type=str, help=ps_help)
@@ -67,7 +67,7 @@ def run(args_: argparse.Namespace, logger_) -> pd.DataFrame:
     li = []
     if args.benchmark in SUPPORTED_BENCHMARKS:
         benchmark_dir = args.root_dir / args.benchmark
-        src_dir = benchmark_dir / "facerecon" / args.pred_step
+        src_dir = benchmark_dir / args.pred_step
         raw_dir = (
             benchmark_dir / "raw" / "test"
         )  # need to include faces that didn't process
@@ -87,7 +87,7 @@ def run(args_: argparse.Namespace, logger_) -> pd.DataFrame:
             zip([(x.parents[0].name, x.stem) for x in raw_im_srcs], raw_im_srcs)
         )
         im_folder = ImageFolder(src_dir)
-        dst_dir = benchmark_dir / "fer" / args.step
+        dst_dir = benchmark_dir / args.step
     if len(im_srcs_di) == 0:
         logger_.error(f"No files to process in {args.src_dir}.")
         sys.exit(1)
