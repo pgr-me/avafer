@@ -32,9 +32,9 @@ from util.visualizer import MyVisualizer
 # TODO: Fix the CLI so that arguments actually work...remove the original args class repo used and replace with argparser
 BENCHMARK = "fer2013"  # "test_dataset"
 NAME = "facerecon_20230425"
-PRED_STEP = "HF"
+PRED_STEP = "facelandmarks_mtcnn"
 ROOT_DIR = Path("/data")
-STEP = "HF"
+STEP = "facerecon_deep3dfacerecon"
 SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")
 # Inference defaults
 DEVICE = 0
