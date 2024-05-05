@@ -1,0 +1,14 @@
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel 
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/New_York
+
+RUN apt-get update && apt-get install -y git vim ffmpeg tzdata
+RUN python -m pip install --upgrade pip
+RUN pip install omegaconf opencv-python scipy einops scikit-image albumentations tqdm timm ffmpeg loguru xformers fastai
+RUN git clone https://github.com/zsyOAOA/ResShift.git
+
+WORKDIR /workspace/ResShift
+
+COPY facerestore/facerestore_resshift.py /workspace/ResShift/
+
