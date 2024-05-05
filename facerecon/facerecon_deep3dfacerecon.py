@@ -30,9 +30,10 @@ from util.visualizer import MyVisualizer
 
 # IO defaults
 # TODO: Fix the CLI so that arguments actually work...remove the original args class repo used and replace with argparser
-BENCHMARK = "fer2013"  # "test_dataset"
+BENCHMARK = "test_dataset"
 NAME = "facerecon_20230425"
-PRED_STEP = "facelandmarks_mtcnn"
+LM_PRED_STEP = "facelandmarks_mtcnn"
+FR_PRED_STEP = "facerestore_deoldify"
 ROOT_DIR = Path("/data")
 STEP = "facerecon_deep3dfacerecon"
 SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")
@@ -45,16 +46,16 @@ def argparser():
     parser = argparse.ArgumentParser()
     # IO arguments
     bm_help = "Benchmark dataset to process."
+    frs_help = "Name of facerestore predecessor step."
     io_help = "Path to root data directory."
+    lms_help = "Name of facelandmarks predecessor step."
     na_help = "Face reconstruction model subdirectory in checkpoints/ directory."
-    ps_help = (
-        "Name of predecessor step corresponding to sub-directory in data/facelandmarks."
-    )
     st_help = "Name of sub-directory, located in data/facerecon/, for this step."
     parser.add_argument("-bm", "--benchmark", default=BENCHMARK, type=str, help=bm_help)
+    parser.add_argument("-frs", "--fr_pred_step", default=FR_PRED_STEP, type=str, help=frs_help)
     parser.add_argument("-io", "--root_dir", default=ROOT_DIR, type=Path, help=io_help)
+    parser.add_argument("-lms", "--lm_pred_step", default=LM_PRED_STEP, type=str, help=lms_help)
     parser.add_argument("-na", "--name", default=NAME, type=str, help=na_help)
-    parser.add_argument("-ps", "--pred_step", default=PRED_STEP, type=str, help=ps_help)
     parser.add_argument("-st", "--step", default=STEP, type=str, help=st_help)
     # Inference arguments
     dv_help = "Device to use; choose -1 to use CPU."
@@ -132,8 +133,8 @@ def run(args: argparse.Namespace, logger: Logger):
     visualizer = MyVisualizer(args)
     if args.benchmark in SUPPORTED_BENCHMARKS:
         benchmark_dir = args.root_dir / args.benchmark
-        im_src_dir = benchmark_dir / "facerestore" / args.pred_step
-        lm_src_dir = benchmark_dir / "facelandmarks" / args.pred_step
+        im_src_dir = benchmark_dir / args.fr_pred_step
+        lm_src_dir = benchmark_dir / args.lm_pred_step
         try:
             im_folder = ImageFolder(im_src_dir)
         except Exception as e:
@@ -160,7 +161,7 @@ def run(args: argparse.Namespace, logger: Logger):
         logger.error(f"Benchmark {args.benchark} is not supported.")
         sys.exit(1)
     lm3d_std = load_lm3d(args.bfm_folder)
-    dst_dir = benchmark_dir / "facerecon" / args.step
+    dst_dir = benchmark_dir / args.step
     dst_dir.mkdir(exist_ok=True, parents=True)
     # TODO: Use datasets and dataloaders so this can be done more efficiently
     for k_tuple, v_tuple in tqdm(src_di.items()):
