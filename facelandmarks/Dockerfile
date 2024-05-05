@@ -6,5 +6,5 @@ RUN pip install loguru tqdm ipdb
 WORKDIR /workspace
 RUN git clone https://github.com/TropComplique/mtcnn-pytorch.git
 WORKDIR /workspace/mtcnn-pytorch
-COPY facelandmarks/facelandmarks.py /workspace/mtcnn-pytorch/
+COPY facelandmarks/facelandmarks_mtcnn.py /workspace/mtcnn-pytorch/
 
