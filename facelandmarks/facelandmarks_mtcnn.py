@@ -73,13 +73,14 @@ if __name__ == "__main__":
         emo_subdir = dst_dir / emo
         emo_subdir.mkdir(exist_ok=True, parents=True)
         image = Image.open(src)
-        with torch.no_grad():
-            bb, lm = detect_faces(image)
-        # TODO: Track these failures quantitatively
-        # TODO: Look into how these errors can be avoided entirely
         try:
+            with torch.no_grad():
+                bb, lm = detect_faces(image)
+            # TODO: Track these failures quantitatively
+            # TODO: Look into how these errors can be avoided entirely
             lm = lm[0].reshape((2, 5)).T
             dst = emo_subdir / f"{src.stem}.txt"
             np.savetxt(dst, lm, fmt="%.2f")
         except Exception as e:
             logger.error(f"{src} failed.")
+            logger.error(e)
