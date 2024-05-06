@@ -67,7 +67,7 @@ COPY data/pretrained/facerecon/BFM/01_MorphableModel.mat /workspace/Deep3DFaceRe
 COPY data/pretrained/facerecon/BFM/Exp_Pca.bin /workspace/Deep3DFaceRecon_pytorch/BFM/
 COPY data/pretrained/facerecon/checkpoints/facerecon_20230425/ /workspace/Deep3DFaceRecon_pytorch/checkpoints/facerecon_20230425/
 # Copy over runner file
-COPY facerecon/facerecon.py /workspace/Deep3DFaceRecon_pytorch/
+COPY facerecon/facerecon_deep3dfacerecon.py /workspace/Deep3DFaceRecon_pytorch/
 # Install modules specific to modification of Deep3dFaceRecon_pytorch
 RUN pip install loguru
 WORKDIR /workspace/Deep3DFaceRecon_pytorch/

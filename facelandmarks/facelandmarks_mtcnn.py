@@ -18,8 +18,8 @@ from src import detect_faces
 
 # IO defaults
 BENCHMARK = "test_dataset"
-STEP = "HF"  # Sub-directory to write to in facelandmarks directory
-PRED_STEP = "HF"  # Predecessor step to use
+STEP = "facelandmarks_mtcnn"  # Sub-directory of benchmark directory
+PRED_STEP = "facerestore_deoldify"  # Predecessor step to use
 ROOT_DIR = Path("/data")
 SUFFIXES = (".png", ".jpg", ".jpeg", ".tif", ".tiff")
 SUPPORTED_BENCHMARKS = (
@@ -53,18 +53,13 @@ if __name__ == "__main__":
         logger.debug(f"{k}: {v}")
     if args.benchmark in SUPPORTED_BENCHMARKS:
         benchmark_dir = args.root_dir / args.benchmark
-        src_dir = benchmark_dir / "facerestore" / args.pred_step
-        try:
-            im_folder = ImageFolder(src_dir)
-        except Exception as e:
-            logger.error(
-                f"{src_dir} does not exist. Run the facerestore step to generate."
-            )
-            logger.error(e)
-            sys.exit(1)
+        if args.pred_step is None:
+            pred_dir = benchmark_dir / "raw" / "test"
+        else:
+            pred_dir = benchmark_dir / args.pred_step
+        im_folder = ImageFolder(pred_dir)
         srcs = [Path(x[0]) for x in im_folder.imgs]
-        im_folder = ImageFolder(src_dir)
-        dst_dir = benchmark_dir / "facelandmarks" / args.step
+        dst_dir = benchmark_dir / args.step
     else:
         logger.error(f"Benchmark {args.benchmark} is not supported")
         sys.exit(1)
@@ -74,16 +69,18 @@ if __name__ == "__main__":
         sys.exit(1)
     dst_dir.mkdir(exist_ok=True, parents=True)
     for src in tqdm(srcs):
+        emo = src.parents[0].name
+        emo_subdir = dst_dir / emo
+        emo_subdir.mkdir(exist_ok=True, parents=True)
         image = Image.open(src)
-        with torch.no_grad():
-            bb, lm = detect_faces(image)
-        # TODO: Track these failures quantitatively
-        # TODO: Look into how these errors can be avoided entirely
         try:
+            with torch.no_grad():
+                bb, lm = detect_faces(image)
+            # TODO: Track these failures quantitatively
+            # TODO: Look into how these errors can be avoided entirely
             lm = lm[0].reshape((2, 5)).T
-            emo_subdir = dst_dir / src.parents[0].name
-            emo_subdir.mkdir(exist_ok=True, parents=True)
             dst = emo_subdir / f"{src.stem}.txt"
             np.savetxt(dst, lm, fmt="%.2f")
         except Exception as e:
             logger.error(f"{src} failed.")
+            logger.error(e)
