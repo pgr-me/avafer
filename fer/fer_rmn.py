@@ -17,7 +17,7 @@ from tqdm import tqdm
 BENCHMARK = "test_dataset"
 PRED_STEP = "facerecon_deep3dfacerecon"
 ROOT_DIR = Path("/data")
-STEP = "fer_rmn"
+STEP = "fer_rmn_deep3dfacerecon"
 SUPPORTED_BENCHMARKS = ("fer2013", "test_dataset")
 SUFFIXES = (
     ".png",
@@ -67,17 +67,16 @@ def run(args_: argparse.Namespace, logger_) -> pd.DataFrame:
     li = []
     if args.benchmark in SUPPORTED_BENCHMARKS:
         benchmark_dir = args.root_dir / args.benchmark
-        src_dir = benchmark_dir / args.pred_step
-        raw_dir = (
-            benchmark_dir / "raw" / "test"
-        )  # need to include faces that didn't process
+        raw_dir = (benchmark_dir / "raw" / "test")
+        if (args.pred_step is None) or (args.pred_step.lower() in ("none", "false", "0")):
+            src_dir = raw_dir
+        else:
+            src_dir = benchmark_dir / args.pred_step
         try:
             im_folder = ImageFolder(src_dir)
             raw_im_folder = ImageFolder(raw_dir)
         except Exception as e:
-            logger.error(
-                f"{src_dir} does not exist. Run the facerestore step to generate."
-            )
+            logger.error(f"{src_dir} not found. Run {args.pred_step} step to generate.")
             logger.error(e)
             sys.exit(1)
         im_srcs = sorted([Path(x[0]) for x in im_folder.imgs])
@@ -92,12 +91,13 @@ def run(args_: argparse.Namespace, logger_) -> pd.DataFrame:
         logger_.error(f"No files to process in {args.src_dir}.")
         sys.exit(1)
     dst_dir.mkdir(exist_ok=True, parents=True)
-    for k_tuple, src in tqdm(raw_im_srcs_di.items(), desc="FER inference progress"):
+    for k_tuple, raw_src in tqdm(raw_im_srcs_di.items(), desc="FER inference progress"):
         y, obs_id = k_tuple
-        di = dict(obs_id=src.stem, y=y)
+        di = dict(obs_id=raw_src.stem, y=y)
         # Predict / infer when there is a reconstructed image
         if k_tuple in im_srcs_di:
             try:
+                src = im_srcs_di[k_tuple]
                 image = cv2.imread(str(src))
                 results_ = m.detect_emotion_for_single_frame(image)
                 di.update({k: v for k, v in results_[0].items() if k != "proba_list"})
